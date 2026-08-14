@@ -1,0 +1,68 @@
+name: Publish web app and Android APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: aviation-wordup-release
+  cancel-in-progress: true
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -o aviation-wordup-bundle.zip -d bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prepared-source
+          path: bundle
+  pages:
+    needs: prepare
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: prepared-source
+          path: bundle
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: bundle/site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+  android:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: prepared-source
+          path: bundle
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - working-directory: bundle
+        run: gradle :app:assembleDebug
+      - run: cp bundle/app/build/outputs/apk/debug/app-debug.apk Aviation-WordUp-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Aviation-WordUp-Android
+          path: Aviation-WordUp-Android.apk
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest Aviation-WordUp-Android.apk --title "Aviation WordUp Android" --notes "最新版 Android APK。首次安裝時請允許瀏覽器安裝未知來源應用程式。"
