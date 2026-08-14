@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: unzip -o aviation-wordup-bundle.zip -d bundle
+      - run: unzip -o aviation-wordup-bundle-v2.zip -d bundle
       - uses: actions/upload-artifact@v4
         with:
           name: prepared-source
