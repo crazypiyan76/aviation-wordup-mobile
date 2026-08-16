@@ -1,15 +1,19 @@
 name: Publish web app and Android APK
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: write
   pages: write
   id-token: write
+
 concurrency:
   group: aviation-wordup-release
   cancel-in-progress: true
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -20,6 +24,7 @@ jobs:
         with:
           name: prepared-source
           path: bundle
+
   pages:
     needs: prepare
     environment:
@@ -39,6 +44,7 @@ jobs:
           path: bundle/site
       - id: deployment
         uses: actions/deploy-pages@v4
+
   android:
     needs: prepare
     runs-on: ubuntu-latest
@@ -64,5 +70,5 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete latest --cleanup-tag --yes || true
-          gh release create latest Aviation-WordUp-Android.apk --title "Aviation WordUp Android" --notes "最新版 Android APK。首次安裝時請允許瀏覽器安裝未知來源應用程式。"
+          gh release delete latest --cleanup-tag --yes --repo "${{ github.repository }}" || true
+          gh release create latest Aviation-WordUp-Android.apk --repo "${{ github.repository }}" --title "Aviation WordUp Android" --notes "最新版 Android APK。首次安裝時請允許瀏覽器安裝未知來源應用程式。"
